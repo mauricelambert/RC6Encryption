@@ -1,0 +1,9 @@
+LICENSE.txt
+MANIFEST.in
+RC6Encryption.py
+README.md
+setup.py
+RC6Encryption.egg-info/PKG-INFO
+RC6Encryption.egg-info/SOURCES.txt
+RC6Encryption.egg-info/dependency_links.txt
+RC6Encryption.egg-info/top_level.txt
