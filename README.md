@@ -79,8 +79,9 @@ decipher = rc6.blocks_to_data(rc6.decrypt(cipher))
 ## Links
 
  - [Github Page](https://github.com/mauricelambert/RC6Encryption/)
- - [Docentation](https://mauricelambert.github.io/info/python/security/RC6Encryption.html)
+ - [Documentation](https://mauricelambert.github.io/info/python/security/RC6Encryption.html)
  - [Pypi package](https://pypi.org/project/RC6Encryption/)
+ - [Executable](https://mauricelambert.github.io/info/python/security/RC6Encryption.pyz)
 
 ## Help
 

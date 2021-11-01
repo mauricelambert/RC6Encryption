@@ -15,7 +15,8 @@ setup(
     long_description_content_type="text/markdown",
     url=package.__url__,
     project_urls = {
-        "Documentation": "https://mauricelambert.github.io/info/python/security/RC6Encryption.html"
+        "Documentation": "https://mauricelambert.github.io/info/python/security/RC6Encryption.html",
+        "Executable": "https://mauricelambert.github.io/info/python/security/RC6Encryption.pyz",
     },
     classifiers = [
         "Programming Language :: Python",
@@ -29,8 +30,8 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-            'rc6 = RC6Encryption:main'
-        ]
+            'rc6 = RC6Encryption:main',
+        ],
     },
     python_requires='>=3.6',
     keywords=[

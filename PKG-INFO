@@ -9,6 +9,7 @@ Maintainer: Maurice Lambert
 Maintainer-email: mauricelambert434@gmail.com
 License: GPL-3.0 License
 Project-URL: Documentation, https://mauricelambert.github.io/info/python/security/RC6Encryption.html
+Project-URL: Executable, https://mauricelambert.github.io/info/python/security/RC6Encryption.pyz
 Description: ![RC6Encryption logo](https://mauricelambert.github.io/info/python/security/rc6_background.png "RC6Encryption logo")
         
         # RC6Encryption
@@ -90,8 +91,9 @@ Description: ![RC6Encryption logo](https://mauricelambert.github.io/info/python/
         ## Links
         
          - [Github Page](https://github.com/mauricelambert/RC6Encryption/)
-         - [Docentation](https://mauricelambert.github.io/info/python/security/RC6Encryption.html)
+         - [Documentation](https://mauricelambert.github.io/info/python/security/RC6Encryption.html)
          - [Pypi package](https://pypi.org/project/RC6Encryption/)
+         - [Executable](https://mauricelambert.github.io/info/python/security/RC6Encryption.pyz)
         
         ## Help
         
