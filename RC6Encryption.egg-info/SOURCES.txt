@@ -6,4 +6,5 @@ setup.py
 RC6Encryption.egg-info/PKG-INFO
 RC6Encryption.egg-info/SOURCES.txt
 RC6Encryption.egg-info/dependency_links.txt
+RC6Encryption.egg-info/entry_points.txt
 RC6Encryption.egg-info/top_level.txt

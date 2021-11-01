@@ -27,6 +27,11 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS",
     ],
+    entry_points = {
+        'console_scripts': [
+            'rc6 = RC6Encryption:main'
+        ]
+    },
     python_requires='>=3.6',
     keywords=[
         "RC6",
