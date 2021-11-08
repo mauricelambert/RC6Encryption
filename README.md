@@ -1,4 +1,4 @@
-![RC6Encryption logo](https://mauricelambert.github.io/info/python/security/rc6_background.png "RC6Encryption logo")
+![RC6Encryption logo](https://mauricelambert.github.io/info/python/security/rc6_small_background.png "RC6Encryption logo")
 
 # RC6Encryption
 
@@ -18,6 +18,15 @@ pip install RC6Encryption
 ```
 
 ## Usages
+
+### Recommended options
+
+Some encoding errors are possible using the command line, I recommend using base64.
+
+```bash
+rc6 [key] -6 -o [secrets.cipher] -i [secrets.file]            # encryption
+rc6 [key] -n base64 -i [secrets.cipher] -o [decipher.file] -d # decryption
+```
 
 ### Command line
 

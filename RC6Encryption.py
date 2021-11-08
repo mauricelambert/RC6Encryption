@@ -87,7 +87,7 @@ Algorithm:
     B = B - S[0]
 """
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __author__ = "Maurice Lambert"
 __author_email__ = "mauricelambert434@gmail.com"
 __maintainer__ = "Maurice Lambert"
@@ -120,12 +120,15 @@ from base64 import (
 from argparse import Namespace, ArgumentParser, FileType
 from binascii import a2b_hqx, b2a_hqx
 from collections.abc import Iterator
+from contextlib import suppress
 from typing import Tuple, List
+from os import device_encoding
 from functools import partial
 from hashlib import sha256
 from io import BytesIO
 import argparse
 import warnings
+import locale
 import sys
 
 basetwo = partial(int, base=2)
@@ -350,7 +353,7 @@ def parse_args() -> Namespace:
         "--output-file",
         "--o-file",
         "-o",
-        type=FileType("w", encoding="latin-1"),
+        type=FileType("w", encoding="utf-8"),
         default=sys.stdout,
         help="The output file.",
     )
@@ -514,6 +517,36 @@ def get_data(arguments: Namespace) -> Iterator[bytes]:
             yield get_sized_data(data)
             data = arguments.input_file.read(16)
 
+def get_encodings():
+
+    """
+    This function returns the probable encodings.
+    """
+
+    encoding = locale.getpreferredencoding()
+    if encoding is not None:
+        yield encoding
+
+    encoding = device_encoding(0)
+    if encoding is not None:
+        yield encoding
+
+    yield "utf-8"    # Default for Linux
+    yield "cp1252"   # Default for Windows
+    yield "latin-1"  # Can read all files
+
+def decode_output(data: bytes) -> str:
+
+    """
+    This function decode outputs (try somes encoding).
+    """
+
+    output = None
+    for encoding in get_encodings():
+        with suppress(UnicodeDecodeError):
+            output = data.decode(encoding)
+            return output
+
 
 def main() -> None:
 
@@ -548,12 +581,12 @@ def main() -> None:
         if format_output:
             buffer.write(data)
         else:
-            arguments.output_file.write(data.decode("latin-1"))
+            arguments.output_file.write(decode_output(data))
 
     if format_output:
         buffer.seek(0)
         arguments.output_file.write(
-            output_encoding(buffer.read(), arguments).decode("latin-1")
+            decode_output(output_encoding(buffer.read(), arguments))
         )
 
 
