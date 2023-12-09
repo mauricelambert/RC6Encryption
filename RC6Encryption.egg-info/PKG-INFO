@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: RC6Encryption
-Version: 0.0.2
+Version: 0.0.3
 Summary: This package implements RC6 encryption.
 Home-page: https://github.com/mauricelambert/RC6Encryption
 Author: Maurice Lambert
@@ -165,5 +165,3 @@ options:
 ## Licence
 
 Licensed under the [GPL, version 3](https://www.gnu.org/licenses/).
-
-

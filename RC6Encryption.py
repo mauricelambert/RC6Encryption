@@ -3,7 +3,7 @@
 
 ###################
 #    This package implements RC6 encryption.
-#    Copyright (C) 2021  Maurice Lambert
+#    Copyright (C) 2021, 2023  Maurice Lambert
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,16 +26,18 @@ This package implements RC6 encryption.
 >>> c = rc6.blocks_to_data(rc6.encrypt(b'abcdefghijklmnop'))
 >>> rc6.blocks_to_data(rc6.decrypt(c))
 b'abcdefghijklmnop'
+>>>
 
 
-~# rc6 abcdefghijklmnop -s abcdefghijklmnop -6
-bM4cLTYlcjp3dk1z7LgsJg==
-~# rc6 abcdefghijklmnop -s bM4cLTYlcjp3dk1z7LgsJg== -n base64 -d
-abcdefghijklmnop
-~# rc6 abcdefghijklmnop --no-sha256 -r 12 -s abcdefghijklmnop -6
-w08njgYKPqiXDUcZxw8z7g==
-~# rc6 abcdefghijklmnop --no-sha256 -r 12 -s w08njgYKPqiXDUcZxw8z7g== -n base64 -d
-abcdefghijklmnop
+~# rc6 mykey -s mydatamydatamyda -6
+a1wT9yfBYPBsPv6N0ScEqg==
+~# rc6 mykey -s a1wT9yfBYPBsPv6N0ScEqg== -n base64 -d
+mydatamydatamyda
+~# rc6 mykey --no-sha256 -r 12 -s mydatamydatamyda -6
+RXj1hEJ12J2Iwp/S5G+ynA==
+~# rc6 mykey --no-sha256 -r 12 -s RXj1hEJ12J2Iwp/S5G+ynA== -n base64 -d
+mydatamydatamyda
+~# 
 """
 
 """
@@ -87,7 +89,7 @@ Algorithm:
     B = B - S[0]
 """
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __author__ = "Maurice Lambert"
 __author_email__ = "mauricelambert434@gmail.com"
 __maintainer__ = "Maurice Lambert"
@@ -97,7 +99,7 @@ license = "GPL-3.0 License"
 __url__ = "https://github.com/mauricelambert/RC6Encryption"
 
 copyright = """
-RC6Encryption  Copyright (C) 2021  Maurice Lambert
+RC6Encryption  Copyright (C) 2021, 2023  Maurice Lambert
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
 under certain conditions.
@@ -117,19 +119,24 @@ from base64 import (
     b32decode,
     b16decode,
 )
-from argparse import Namespace, ArgumentParser, FileType
-from binascii import a2b_hqx, b2a_hqx
+from argparse import Namespace, ArgumentParser, FileType, BooleanOptionalAction
+from locale import getpreferredencoding
 from collections.abc import Iterator
+from sys import exit, stdin, stdout
+from warnings import simplefilter
 from contextlib import suppress
 from typing import Tuple, List
 from os import device_encoding
 from functools import partial
 from hashlib import sha256
 from io import BytesIO
-import argparse
-import warnings
-import locale
-import sys
+
+try:
+    from binascii import a2b_hqx, b2a_hqx
+except ImportError:
+    uu_encoding = False
+else:
+    uu_encoding = True
 
 basetwo = partial(int, base=2)
 unblock = partial(int.to_bytes, length=4, byteorder="big")
@@ -146,7 +153,9 @@ class RC6Encryption:
     P32 = 0xB7E15163
     Q32 = 0x9E3779B9
 
-    def __init__(self, key: bytes, rounds: int = 20, w_bit: int = 32, lgw: int = 5):
+    def __init__(
+        self, key: bytes, rounds: int = 20, w_bit: int = 32, lgw: int = 5
+    ):
         self.key_bytes = key
         self.rounds = rounds
         self.w_bit = w_bit
@@ -156,9 +165,12 @@ class RC6Encryption:
         self.round2_3 = self.round2_2 + 1
         self.round2_4 = self.round2_3 + 1
 
-        self.modulo = 2 ** w_bit
+        self.modulo = 2**w_bit
 
-        self.key_binary_blocks, self.key_integer_reverse_blocks = self.get_blocks(key)
+        (
+            self.key_binary_blocks,
+            self.key_integer_reverse_blocks,
+        ) = self.get_blocks(key)
         self.key_blocks_number = len(self.key_binary_blocks)
 
         self.key_integer_reverse_blocks.reverse()
@@ -169,7 +181,6 @@ class RC6Encryption:
 
     @staticmethod
     def get_blocks(data: bytes) -> Tuple[List[str], List[int]]:
-
         """
         This function returns blocks (binary strings and integers) from data.
         """
@@ -192,7 +203,6 @@ class RC6Encryption:
 
     @staticmethod
     def blocks_to_data(blocks: List[int]) -> bytes:
-
         """
         This function returns data from blocks (binary strings).
         """
@@ -205,17 +215,15 @@ class RC6Encryption:
         return data
 
     def right_rotation(self, x: int, n: int) -> int:
-
         """
         This function perform a right rotation.
         """
 
-        mask = (2 ** n) - 1
+        mask = (2**n) - 1
         mask_bits = x & mask
         return (x >> n) | (mask_bits << (self.w_bit - n))
 
     def left_rotation(self, x: int, n: int) -> int:
-
         """
         This function perform a left rotation (based on right rotation).
         """
@@ -223,7 +231,6 @@ class RC6Encryption:
         return self.right_rotation(x, self.w_bit - n)
 
     def key_generation(self) -> List[int]:
-
         """
         This function generate the key.
         """
@@ -232,8 +239,8 @@ class RC6Encryption:
             self.rc6_key.append((self.rc6_key[i] + self.Q32) % self.modulo)
 
         a = b = i = j = 0
-        v = (
-            3 * self.key_blocks_number
+        v = 3 * (
+            self.key_blocks_number
             if self.key_blocks_number > self.round2_4
             else self.round2_4
         )
@@ -243,7 +250,8 @@ class RC6Encryption:
                 (self.rc6_key[i] + a + b) % self.modulo, 3
             )
             b = self.key_integer_reverse_blocks[j] = self.left_rotation(
-                (self.key_integer_reverse_blocks[j] + a + b) % self.modulo, (a + b) % 32
+                (self.key_integer_reverse_blocks[j] + a + b) % self.modulo,
+                (a + b) % 32,
             )
             i = (i + 1) % (self.round2_4)
             j = (j + 1) % self.key_blocks_number
@@ -251,7 +259,6 @@ class RC6Encryption:
         return self.rc6_key
 
     def encrypt(self, data: bytes) -> List[int]:
-
         """
         This functions performs RC6 encryption.
 
@@ -269,7 +276,9 @@ class RC6Encryption:
             u = self.left_rotation(d * (2 * d + 1) % self.modulo, self.lgw)
             tmod = t % self.w_bit
             umod = u % self.w_bit
-            a = (self.left_rotation(a ^ t, umod) + self.rc6_key[2 * i]) % self.modulo
+            a = (
+                self.left_rotation(a ^ t, umod) + self.rc6_key[2 * i]
+            ) % self.modulo
             c = (
                 self.left_rotation(c ^ u, tmod) + self.rc6_key[2 * i + 1]
             ) % self.modulo
@@ -281,7 +290,6 @@ class RC6Encryption:
         return [a, b, c, d]
 
     def decrypt(self, data: bytes) -> List[int]:
-
         """
         This function performs a RC6 decryption.
         """
@@ -299,10 +307,17 @@ class RC6Encryption:
             tmod = t % self.w_bit
             umod = u % self.w_bit
             c = (
-                self.right_rotation((c - self.rc6_key[2 * i + 1]) % self.modulo, tmod)
+                self.right_rotation(
+                    (c - self.rc6_key[2 * i + 1]) % self.modulo, tmod
+                )
                 ^ u
             )
-            a = self.right_rotation((a - self.rc6_key[2 * i]) % self.modulo, umod) ^ t
+            a = (
+                self.right_rotation(
+                    (a - self.rc6_key[2 * i]) % self.modulo, umod
+                )
+                ^ t
+            )
 
         d = (d - self.rc6_key[1]) % self.modulo
         b = (b - self.rc6_key[0]) % self.modulo
@@ -311,7 +326,6 @@ class RC6Encryption:
 
 
 def get_sized_data(data: bytes, size: int = 16) -> bytes:
-
     """
     This function return sized data.
     """
@@ -324,7 +338,6 @@ def get_sized_data(data: bytes, size: int = 16) -> bytes:
 
 
 def parse_args() -> Namespace:
-
     """
     This function parse command line arguments.
     """
@@ -341,7 +354,7 @@ def parse_args() -> Namespace:
         "--i-file",
         "-i",
         type=FileType("rb"),
-        default=sys.stdin,
+        default=stdin.buffer,
         help="The file to be encrypted.",
         nargs="?",
     )
@@ -353,8 +366,8 @@ def parse_args() -> Namespace:
         "--output-file",
         "--o-file",
         "-o",
-        type=FileType("w", encoding="utf-8"),
-        default=sys.stdout,
+        type=FileType("wb"),
+        default=stdout.buffer,
         help="The output file.",
     )
 
@@ -387,15 +400,21 @@ def parse_args() -> Namespace:
         help="Base16 encoding as output format",
         action="store_true",
     )
-    output_encoding.add_argument(
-        "--uu", "-u", help="UU encoding as output format", action="store_true"
-    )
+    if uu_encoding:
+        output_encoding.add_argument(
+            "--uu",
+            "-u",
+            help="UU encoding as output format",
+            action="store_true",
+        )
     output_encoding.add_argument(
         "--output-encoding",
         "--o-encoding",
         "-e",
         help="Output encoding.",
-        choices={"base85", "base64", "base32", "base16", "uu"},
+        choices={"base85", "base64", "base32", "base16", "uu"}
+        if uu_encoding
+        else {"base85", "base64", "base32", "base16"},
     )
 
     parser.add_argument(
@@ -403,17 +422,23 @@ def parse_args() -> Namespace:
         "--i-encoding",
         "-n",
         help="Input encoding.",
-        choices={"base85", "base64", "base32", "base16", "uu"},
+        choices={"base85", "base64", "base32", "base16", "uu"}
+        if uu_encoding
+        else {"base85", "base64", "base32", "base16"},
     )
 
-    parser.add_argument("--rounds", "-r", type=int, help="RC6 rounds", default=20)
-    parser.add_argument("--w-bit", "-b", type=int, help="RC6 w-bit", default=32)
+    parser.add_argument(
+        "--rounds", "-r", type=int, help="RC6 rounds", default=20
+    )
+    parser.add_argument(
+        "--w-bit", "-b", type=int, help="RC6 w-bit", default=32
+    )
     parser.add_argument("--lgw", "-l", type=int, help="RC6 lgw", default=5)
 
     parser.add_argument(
         "--sha256",
         help="Use the sha256 of the key as the key.",
-        action=argparse.BooleanOptionalAction,
+        action=BooleanOptionalAction,
         default=True,
     )
     parser.add_argument("key", help="Encryption key.")
@@ -421,13 +446,12 @@ def parse_args() -> Namespace:
     arguments = parser.parse_args()
 
     if arguments.input_file is None:
-        arguments.input_file = sys.stdin
+        arguments.input_file = stdin
 
     return arguments
 
 
 def output_encoding(data: bytes, arguments: Namespace) -> bytes:
-
     """
     This function returns encoded data.
     """
@@ -440,17 +464,18 @@ def output_encoding(data: bytes, arguments: Namespace) -> bytes:
         encoding = b32encode
     elif arguments.base16 or arguments.output_encoding == "base16":
         encoding = b16encode
-    elif arguments.uu or arguments.output_encoding == "uu":
-        warnings.simplefilter("ignore")
+    elif uu_encoding and (arguments.uu or arguments.output_encoding == "uu"):
+        simplefilter("ignore")
         data = b2a_hqx(data)
-        warnings.simplefilter("default")
+        simplefilter("default")
         return data
+    else:
+        raise ValueError("Invalid encoding algorithm value")
 
     return encoding(data)
 
 
 def input_encoding(data: bytes, encoding: str) -> bytes:
-
     """
     This function returns decoded data.
     """
@@ -463,17 +488,18 @@ def input_encoding(data: bytes, encoding: str) -> bytes:
         decoding = b32decode
     elif encoding == "base16":
         decoding = b16decode
-    elif encoding == "uu":
-        warnings.simplefilter("ignore")
+    elif uu_encoding and encoding == "uu":
+        simplefilter("ignore")
         data = a2b_hqx(data)
-        warnings.simplefilter("default")
+        simplefilter("default")
         return data
+    else:
+        raise ValueError("Invalid encoding algorithm value")
 
     return decoding(data)
 
 
 def get_key(arguments: Namespace) -> bytes:
-
     """
     This function returns the key (256 bits).
     """
@@ -485,7 +511,6 @@ def get_key(arguments: Namespace) -> bytes:
 
 
 def generator_data(data: bytes, encoding: str) -> Iterator[bytes]:
-
     """
     Generator to return encoded data for encryption.
     """
@@ -500,30 +525,31 @@ def generator_data(data: bytes, encoding: str) -> Iterator[bytes]:
 
 
 def get_data(arguments: Namespace) -> Iterator[bytes]:
-
     """
     Generator to return data for encryption.
     """
 
     if arguments.input_string:
-        yield from generator_data(arguments.input_string, arguments.input_encoding)
+        yield from generator_data(
+            arguments.input_string, arguments.input_encoding
+        )
     elif arguments.input_encoding:
-        yield from generator_data(arguments.input_file.read(), arguments.input_encoding)
+        yield from generator_data(
+            arguments.input_file.read(), arguments.input_encoding
+        )
     else:
         data = arguments.input_file.read(16)
         while data:
-            if isinstance(data, str):
-                data = data.encode("utf-8")
             yield get_sized_data(data)
             data = arguments.input_file.read(16)
 
-def get_encodings():
 
+def get_encodings():
     """
     This function returns the probable encodings.
     """
 
-    encoding = locale.getpreferredencoding()
+    encoding = getpreferredencoding()
     if encoding is not None:
         yield encoding
 
@@ -531,12 +557,12 @@ def get_encodings():
     if encoding is not None:
         yield encoding
 
-    yield "utf-8"    # Default for Linux
-    yield "cp1252"   # Default for Windows
+    yield "utf-8"  # Default for Linux
+    yield "cp1252"  # Default for Windows
     yield "latin-1"  # Can read all files
 
-def decode_output(data: bytes) -> str:
 
+def decode_output(data: bytes) -> str:
     """
     This function decode outputs (try somes encoding).
     """
@@ -548,8 +574,7 @@ def decode_output(data: bytes) -> str:
             return output
 
 
-def main() -> None:
-
+def main() -> int:
     """
     This function executes this file from the command line.
     """
@@ -568,10 +593,11 @@ def main() -> None:
             arguments.base64,
             arguments.base32,
             arguments.base16,
-            arguments.uu,
+            arguments.uu if uu_encoding else None,
             arguments.output_encoding,
         ]
     )
+
     function = rc6.decrypt if arguments.decryption else rc6.encrypt
     buffer = BytesIO()
 
@@ -581,15 +607,16 @@ def main() -> None:
         if format_output:
             buffer.write(data)
         else:
-            arguments.output_file.write(decode_output(data))
+            arguments.output_file.write(data)
 
     if format_output:
         buffer.seek(0)
         arguments.output_file.write(
-            decode_output(output_encoding(buffer.read(), arguments))
+            output_encoding(buffer.read(), arguments)
         )
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    exit(main())
