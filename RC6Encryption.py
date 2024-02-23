@@ -3,7 +3,7 @@
 
 ###################
 #    This package implements RC6 encryption.
-#    Copyright (C) 2021, 2023  Maurice Lambert
+#    Copyright (C) 2021, 2023, 2024  Maurice Lambert
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,6 +28,15 @@ This package implements RC6 encryption.
 b'abcdefghijklmnop'
 >>>
 
+>>> from urllib.request import urlopen, Request
+>>> from json import dumps, load
+>>> rc6 = RC6Encryption(b'abcdefghijklmnop')
+>>> encrypt = rc6.blocks_to_data(rc6.encrypt(b'abcdefghijklmnop')).hex()
+>>> encrypt
+'bb05a4b6c46a24a8bf70e1e2c0a33e51'
+>>> encrypt == load(urlopen(Request("https://www.lddgo.net/api/RC6?lang=en", headers={"Content-Type": "application/json;charset=UTF-8"}, data=dumps({"inputContent":"abcdefghijklmnop","model":"ECB","padding":"nopadding","inputPassword":"abcdefghijklmnop","inputIv":"","inputFormat":"string","outputFormat":"hex","charset":"UTF-8","encrypt":True}).encode())))["data"]
+True
+>>>
 
 ~# rc6 mykey -s mydatamydatamyda -6
 a1wT9yfBYPBsPv6N0ScEqg==
@@ -38,6 +47,12 @@ RXj1hEJ12J2Iwp/S5G+ynA==
 ~# rc6 mykey --no-sha256 -r 12 -s RXj1hEJ12J2Iwp/S5G+ynA== -n base64 -d
 mydatamydatamyda
 ~# 
+
+1 items passed all tests:
+   9 tests in RC6Encryption
+9 tests in 20 items.
+9 passed and 0 failed.
+Test passed.
 """
 
 """
@@ -89,7 +104,7 @@ Algorithm:
     B = B - S[0]
 """
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __author__ = "Maurice Lambert"
 __author_email__ = "mauricelambert434@gmail.com"
 __maintainer__ = "Maurice Lambert"
@@ -99,7 +114,7 @@ license = "GPL-3.0 License"
 __url__ = "https://github.com/mauricelambert/RC6Encryption"
 
 copyright = """
-RC6Encryption  Copyright (C) 2021, 2023  Maurice Lambert
+RC6Encryption  Copyright (C) 2021, 2023, 2024  Maurice Lambert
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
 under certain conditions.
@@ -139,7 +154,7 @@ else:
     uu_encoding = True
 
 basetwo = partial(int, base=2)
-unblock = partial(int.to_bytes, length=4, byteorder="big")
+unblock = partial(int.to_bytes, length=4, byteorder="little")
 
 
 class RC6Encryption:
@@ -173,8 +188,6 @@ class RC6Encryption:
         ) = self.get_blocks(key)
         self.key_blocks_number = len(self.key_binary_blocks)
 
-        self.key_integer_reverse_blocks.reverse()
-
         self.rc6_key = [self.P32]
 
         self.key_generation()
@@ -194,7 +207,7 @@ class RC6Encryption:
                 binary_blocks.append(block)
                 integer_blocks.append(basetwo(block))
                 block = ""
-            block = f"{block}{bin(char)[2:]:0>8}"
+            block = f"{char:0>8b}{block}"
 
         binary_blocks.append(block)
         integer_blocks.append(basetwo(block))
@@ -610,6 +623,7 @@ def main() -> int:
             arguments.output_file.write(data)
 
     if format_output:
+        breakpoint()
         buffer.seek(0)
         arguments.output_file.write(
             output_encoding(buffer.read(), arguments)

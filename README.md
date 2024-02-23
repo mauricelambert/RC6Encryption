@@ -4,15 +4,17 @@
 
 ## Description
 
-This package implement the RC6 encryption.
+This package implements the RC6 encryption.
 
 ## Requirements
 
-This package require :
+This package require:
+
  - python3
  - python3 Standard Library
 
 ## Installation
+
 ```bash
 pip install RC6Encryption
 ```
@@ -21,7 +23,7 @@ pip install RC6Encryption
 
 ### Recommended options
 
-Some encoding errors are possible using the command line, I recommend using base64.
+Some encoding errors are possible using the command line, i recommend to use base64/base16/base85.
 
 ```bash
 rc6 [key] -6 -o [secrets.cipher] -i [secrets.file]            # encryption
