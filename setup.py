@@ -33,7 +33,7 @@ setup(
             "rc6 = RC6Encryption:main",
         ],
     },
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     keywords=[
         "RC6",
         "Encryption",

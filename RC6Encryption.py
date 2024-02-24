@@ -36,22 +36,64 @@ b'abcdefghijklmnop'
 'bb05a4b6c46a24a8bf70e1e2c0a33e51'
 >>> encrypt == load(urlopen(Request("https://www.lddgo.net/api/RC6?lang=en", headers={"Content-Type": "application/json;charset=UTF-8"}, data=dumps({"inputContent":"abcdefghijklmnop","model":"ECB","padding":"nopadding","inputPassword":"abcdefghijklmnop","inputIv":"","inputFormat":"string","outputFormat":"hex","charset":"UTF-8","encrypt":True}).encode())))["data"]
 True
->>>
+>>> encrypt = rc6.blocks_to_data(rc6.encrypt(b'abcdefghijklmnop') + rc6.encrypt(b'abcdefghijklmnop')).hex()
+>>> encrypt
+'bb05a4b6c46a24a8bf70e1e2c0a33e51bb05a4b6c46a24a8bf70e1e2c0a33e51'
+>>> encrypt == load(urlopen(Request("https://www.lddgo.net/api/RC6?lang=en", headers={"Content-Type": "application/json;charset=UTF-8"}, data=dumps({"inputContent":"abcdefghijklmnopabcdefghijklmnop","model":"ECB","padding":"nopadding","inputPassword":"abcdefghijklmnop","inputIv":"","inputFormat":"string","outputFormat":"hex","charset":"UTF-8","encrypt":True}).encode())))["data"]
+True
+>>> pkcs5_7padding(b'abcdefghijklmno')
+b'abcdefghijklmno\\x01'
+>>> remove_pkcs_padding(pkcs5_7padding(b'abcdefghijklmno')) == b'abcdefghijklmno'
+True
+>>> pkcs5_7padding(b'abcdefghijklm')
+b'abcdefghijklm\\x03\\x03\\x03'
+>>> remove_pkcs_padding(pkcs5_7padding(b'abcdefghijklm')) == b'abcdefghijklm'
+True
+>>> rc6 = RC6Encryption(b'abcdefghijklm')
+>>> encrypt = rc6.blocks_to_data(rc6.encrypt(pkcs5_7padding(b'abcdefghijklm'))).hex()
+>>> encrypt
+'c5ee3509788662a5711822d5e01eb4c0'
+>>> encrypt == load(urlopen(Request("https://www.lddgo.net/api/RC6?lang=en", headers={"Content-Type": "application/json;charset=UTF-8"}, data=dumps({"inputContent":"abcdefghijklm","model":"ECB","padding":"pkcs5padding","inputPassword":"abcdefghijklm","inputIv":"","inputFormat":"string","outputFormat":"hex","charset":"UTF-8","encrypt":True}).encode())))["data"]
+True
+>>> rc6 = RC6Encryption(b'abcd')
+>>> encrypt = rc6.data_encryption_ECB(b'abcdefghijklmnop').hex()
+>>> encrypt
+'78a64e37f7455f30aaf40750be1a065701bf2f308216c43c42c794285ffbf99e'
+>>> encrypt == load(urlopen(Request("https://www.lddgo.net/api/RC6?lang=en", headers={"Content-Type": "application/json;charset=UTF-8"}, data=dumps({"inputContent":"abcdefghijklmnop","model":"ECB","padding":"pkcs5padding","inputPassword":"abcd","inputIv":"","inputFormat":"string","outputFormat":"hex","charset":"UTF-8","encrypt":True}).encode())))["data"]
+True
+>>> rc6.data_decryption_ECB(bytes.fromhex('78a64e37f7455f30aaf40750be1a065701bf2f308216c43c42c794285ffbf99e'))
+b'abcdefghijklmnop'
+>>> rc6 = RC6Encryption(b'abcd')
+>>> iv, encrypt = rc6.data_encryption_CBC(b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm', b'IVTEST')
+>>> encrypt = encrypt.hex()
+>>> iv
+b'IVTESTIVTESTIVTE'
+>>> encrypt
+'8de91e69865825bbb6e1785e3b498f3a89708aaa2aff01a688cf9836bd7eea56c04fa0a14706d79bd94846e905bf070b'
+>>> encrypt == load(urlopen(Request("https://www.lddgo.net/api/RC6?lang=en", headers={"Content-Type": "application/json;charset=UTF-8"}, data=dumps({"inputContent":"abcdefghijklmnopabcdefghijklmnopabcdefghijklm","model":"CBC","padding":"pkcs5padding","inputPassword":"abcd","inputIv":iv.decode('latin-1'),"inputFormat":"string","outputFormat":"hex","charset":"UTF-8","encrypt":True}).encode())))["data"]
+True
+>>> rc6.data_decryption_CBC(bytes.fromhex('8de91e69865825bbb6e1785e3b498f3a89708aaa2aff01a688cf9836bd7eea56c04fa0a14706d79bd94846e905bf070b'), iv)
+b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm'
+>>> 
 
-~# rc6 mykey -s mydatamydatamyda -6
-a1wT9yfBYPBsPv6N0ScEqg==
-~# rc6 mykey -s a1wT9yfBYPBsPv6N0ScEqg== -n base64 -d
-mydatamydatamyda
-~# rc6 mykey --no-sha256 -r 12 -s mydatamydatamyda -6
-RXj1hEJ12J2Iwp/S5G+ynA==
-~# rc6 mykey --no-sha256 -r 12 -s RXj1hEJ12J2Iwp/S5G+ynA== -n base64 -d
-mydatamydatamyda
+~# rc6 mykey -s mydata -6
+0wS4TwM292nGa378oBuz/w==
+~# rc6 mykey -s 0wS4TwM292nGa378oBuz/w== -n base64 -d
+mydata
+~# rc6 mykey --no-sha256 -r 12 -s mydata -6
+vzliI0irqi3tZ8fULxJ14g==
+~# rc6 mykey --no-sha256 -r 12 -s vzliI0irqi3tZ8fULxJ14g== -n base64 -d
+mydata
+~# rc6 mykey -m CBC -I myiv -s mydata -1
+6D7969766D7969766D7969766D796976BF2F024053F74FE27920DE5C274935A6
+~# rc6 mykey -m CBC -d -s 6D7969766D7969766D7969766D796976BF2F024053F74FE27920DE5C274935A6 -n base16
+mydata
 ~# 
 
 1 items passed all tests:
-   9 tests in RC6Encryption
-9 tests in 20 items.
-9 passed and 0 failed.
+  32 tests in RC6Encryption
+32 tests in 25 items.
+32 passed and 0 failed.
 Test passed.
 """
 
@@ -104,12 +146,12 @@ Algorithm:
     B = B - S[0]
 """
 
-__version__ = "0.0.4"
+__version__ = "1.0.0"
 __author__ = "Maurice Lambert"
 __author_email__ = "mauricelambert434@gmail.com"
 __maintainer__ = "Maurice Lambert"
 __maintainer_email__ = "mauricelambert434@gmail.com"
-__description__ = """This package implements RC6 encryption."""
+__description__ = "This package implements RC6 encryption."
 license = "GPL-3.0 License"
 __url__ = "https://github.com/mauricelambert/RC6Encryption"
 
@@ -122,7 +164,9 @@ under certain conditions.
 __license__ = license
 __copyright__ = copyright
 
-__all__ = ["RC6Encryption"]
+print(copyright)
+
+__all__ = ["RC6Encryption", "pkcs5_7padding"]
 
 from base64 import (
     b85encode,
@@ -136,15 +180,15 @@ from base64 import (
 )
 from argparse import Namespace, ArgumentParser, FileType, BooleanOptionalAction
 from locale import getpreferredencoding
+from typing import Tuple, List, Union
 from collections.abc import Iterator
 from sys import exit, stdin, stdout
 from warnings import simplefilter
 from contextlib import suppress
-from typing import Tuple, List
 from os import device_encoding
 from functools import partial
 from hashlib import sha256
-from io import BytesIO
+from os import urandom
 
 try:
     from binascii import a2b_hqx, b2a_hqx
@@ -191,6 +235,18 @@ class RC6Encryption:
         self.rc6_key = [self.P32]
 
         self.key_generation()
+
+    @staticmethod
+    def enumerate_blocks(data: bytes) -> Iterator[Tuple[int, int, int, int]]:
+        """
+        This function returns a tuple of 4 integers for each blocks.
+        """
+
+        _, blocks = RC6Encryption.get_blocks(data)
+
+        while blocks:
+            a, b, c, d, *blocks = blocks
+            yield a, b, c, d
 
     @staticmethod
     def get_blocks(data: bytes) -> Tuple[List[str], List[int]]:
@@ -271,14 +327,115 @@ class RC6Encryption:
 
         return self.rc6_key
 
-    def encrypt(self, data: bytes) -> List[int]:
+    def data_encryption_ECB(self, data: bytes) -> bytes:
         """
-        This functions performs RC6 encryption.
+        This function performs full encryption using ECB mode:
+            - add PKCS (5/7) padding
+            - get blocks
+            - encrypt all blocks using ECB mode
+            - convert blocks in bytes
+            - returns bytes
+        """
+
+        data = pkcs5_7padding(data)
+        encrypted = []
+
+        for block in self.enumerate_blocks(data):
+            encrypted.extend(self.encrypt(block))
+
+        return self.blocks_to_data(encrypted)
+
+    def data_decryption_ECB(self, data: bytes) -> bytes:
+        """
+        This function performs full decryption using ECB mode:
+            - get blocks
+            - decrypt all blocks using ECB mode
+            - convert blocks in bytes
+            - remove PKCS (5/7) padding
+            - returns bytes
+        """
+
+        decrypted = []
+
+        for block in self.enumerate_blocks(data):
+            decrypted.extend(self.decrypt(block))
+
+        return remove_pkcs_padding(self.blocks_to_data(decrypted))
+
+    def data_encryption_CBC(
+        self, data: bytes, iv: bytes = None
+    ) -> Tuple[bytes, bytes]:
+        """
+        This function performs full encryption using CBC mode:
+            - get/generate the IV
+            - add PKCS (5/7) padding
+            - get blocks
+            - encrypt all blocks using CBC mode
+            - convert blocks in bytes
+            - returns bytes
+        """
+
+        if iv is None:
+            _iv = urandom(16)
+        else:
+            iv_length = len(iv)
+            _iv = bytes(iv[i % iv_length] for i in range(16))
+
+        _, iv = self.get_blocks(_iv)
+
+        data = pkcs5_7padding(data)
+        encrypted = []
+
+        for block in self.enumerate_blocks(data):
+            block = (
+                block[0] ^ iv[0],
+                block[1] ^ iv[1],
+                block[2] ^ iv[2],
+                block[3] ^ iv[3],
+            )
+            iv = self.encrypt(block)
+            encrypted.extend(iv)
+
+        return _iv, self.blocks_to_data(encrypted)
+
+    def data_decryption_CBC(self, data: bytes, iv: bytes) -> bytes:
+        """
+        This function performs full decryption using CBC mode:
+            - get blocks
+            - decrypt all blocks using CBC mode
+            - convert blocks in bytes
+            - remove PKCS (5/7) padding
+            - returns bytes
+        """
+
+        _, iv = self.get_blocks(iv)
+        decrypted = []
+
+        for block in self.enumerate_blocks(data):
+            decrypted_block = self.decrypt(block)
+            decrypted.extend(
+                (
+                    decrypted_block[0] ^ iv[0],
+                    decrypted_block[1] ^ iv[1],
+                    decrypted_block[2] ^ iv[2],
+                    decrypted_block[3] ^ iv[3],
+                )
+            )
+            iv = block
+
+        return remove_pkcs_padding(self.blocks_to_data(decrypted))
+
+    def encrypt(
+        self, data: Union[bytes, Tuple[int, int, int, int]]
+    ) -> List[int]:
+        """
+        This functions performs RC6 encryption on only one block.
 
         This function returns a list of 4 integers.
         """
 
-        _, data = self.get_blocks(data)
+        if isinstance(data, bytes):
+            _, data = self.get_blocks(data)
         a, b, c, d = data
 
         b = (b + self.rc6_key[0]) % self.modulo
@@ -307,7 +464,8 @@ class RC6Encryption:
         This function performs a RC6 decryption.
         """
 
-        _, data = self.get_blocks(data)
+        if isinstance(data, bytes):
+            _, data = self.get_blocks(data)
         a, b, c, d = data
 
         c = (c - self.rc6_key[self.round2_3]) % self.modulo
@@ -338,15 +496,22 @@ class RC6Encryption:
         return [a, b, c, d]
 
 
-def get_sized_data(data: bytes, size: int = 16) -> bytes:
+def remove_pkcs_padding(data: bytes) -> bytes:
     """
-    This function return sized data.
+    This function implements PKCS 5/7 padding.
+    """
+
+    return data[: data[-1] * -1]
+
+
+def pkcs5_7padding(data: bytes, size: int = 16) -> bytes:
+    """
+    This function implements PKCS 5/7 padding.
     """
 
     mod = len(data) % size
-    if mod:
-        data = data + b"\x00" * (size - mod)
-
+    padding = size - mod
+    data = data + padding.to_bytes() * padding
     return data
 
 
@@ -355,7 +520,18 @@ def parse_args() -> Namespace:
     This function parse command line arguments.
     """
 
-    parser = ArgumentParser(description="This file performs RC6 encryption.")
+    parser = ArgumentParser(description="This script performs RC6 encryption.")
+
+    parser.add_argument(
+        "--mode",
+        "-m",
+        help=(
+            "Ecryption mode, for CBC encryption IV"
+            " is write on the first 16 bytes of the encrypted data."
+        ),
+        default="ECB",
+        choices={"ECB", "CBC"},
+    )
 
     parser.add_argument(
         "--decryption", "-d", help="Data decryption.", action="store_true"
@@ -446,11 +622,19 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "--w-bit", "-b", type=int, help="RC6 w-bit", default=32
     )
+    parser.add_argument(
+        "--iv",
+        "-I",
+        help=(
+            "IV for CBC mode only, for decryption"
+            " if IV is not set the 16 first bytes are used instead."
+        ),
+    )
     parser.add_argument("--lgw", "-l", type=int, help="RC6 lgw", default=5)
 
     parser.add_argument(
         "--sha256",
-        help="Use the sha256 of the key as the key.",
+        help="Use the sha256 hash of the key as the key.",
         action=BooleanOptionalAction,
         default=True,
     )
@@ -514,47 +698,30 @@ def input_encoding(data: bytes, encoding: str) -> bytes:
 
 def get_key(arguments: Namespace) -> bytes:
     """
-    This function returns the key (256 bits).
+    This function returns the key (256 bits) using sha256
+    by default or PKCS 5/7 for padding.
     """
 
     if arguments.sha256:
         return sha256(arguments.key.encode()).digest()
     else:
-        return get_sized_data(arguments.key.encode(), 16)
+        return pkcs5_7padding(arguments.key.encode(), 16)[:16]
 
 
-def generator_data(data: bytes, encoding: str) -> Iterator[bytes]:
+def get_data(arguments: Namespace) -> bytes:
     """
-    Generator to return encoded data for encryption.
-    """
-
-    if encoding:
-        data = input_encoding(data, encoding)
-
-    for i in range(0, len(data), 16):
-        temp = data[i : i + 16]
-        if temp:
-            yield get_sized_data(temp)
-
-
-def get_data(arguments: Namespace) -> Iterator[bytes]:
-    """
-    Generator to return data for encryption.
+    This function returns data for encryption from arguments.
     """
 
     if arguments.input_string:
-        yield from generator_data(
-            arguments.input_string, arguments.input_encoding
-        )
-    elif arguments.input_encoding:
-        yield from generator_data(
-            arguments.input_file.read(), arguments.input_encoding
-        )
+        data = arguments.input_string
     else:
-        data = arguments.input_file.read(16)
-        while data:
-            yield get_sized_data(data)
-            data = arguments.input_file.read(16)
+        data = arguments.input_file.read()
+
+    if arguments.input_encoding:
+        data = input_encoding(data, arguments.input_encoding)
+
+    return data
 
 
 def get_encodings():
@@ -611,24 +778,36 @@ def main() -> int:
         ]
     )
 
-    function = rc6.decrypt if arguments.decryption else rc6.encrypt
-    buffer = BytesIO()
-
-    for data in get_data(arguments):
-        data = rc6.blocks_to_data(function(data))
-
-        if format_output:
-            buffer.write(data)
+    if arguments.mode == "ECB":
+        function = (
+            rc6.data_decryption_ECB
+            if arguments.decryption
+            else rc6.data_encryption_ECB
+        )
+        data = function(get_data(arguments))
+    elif arguments.mode == "CBC":
+        function = (
+            rc6.data_decryption_CBC
+            if arguments.decryption
+            else rc6.data_encryption_CBC
+        )
+        if arguments.decryption and not arguments.iv:
+            data = get_data(arguments)
+            iv = data[:16]
+            data = data[16:]
         else:
-            arguments.output_file.write(data)
+            iv = arguments.iv.encode()
+            data = get_data(arguments)
+
+        data = function(data, iv)
+
+        if isinstance(data, tuple):
+            data = b"".join(data)
 
     if format_output:
-        breakpoint()
-        buffer.seek(0)
-        arguments.output_file.write(
-            output_encoding(buffer.read(), arguments)
-        )
+        data = output_encoding(data, arguments)
 
+    arguments.output_file.write(data)
     return 0
 
 

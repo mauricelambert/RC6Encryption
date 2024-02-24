@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: RC6Encryption
-Version: 0.0.4
+Version: 1.0.0
 Summary: This package implements RC6 encryption.
 Home-page: https://github.com/mauricelambert/RC6Encryption
 Author: Maurice Lambert
@@ -22,7 +22,7 @@ Classifier: Programming Language :: Python :: 3.9
 Classifier: Operating System :: POSIX :: Linux
 Classifier: Operating System :: Microsoft :: Windows
 Classifier: Operating System :: MacOS
-Requires-Python: >=3.6
+Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
 
@@ -32,7 +32,10 @@ License-File: LICENSE.txt
 
 ## Description
 
-This package implements the RC6 encryption.
+This pure python package implements the RC6 encryption (ECB and CBC encryption mode).
+
+> All encryption and decryption mode are tested, i compare the result with https://www.lddgo.net/en/encrypt/rc6 API.
+>> The ECB mode is not recommended, it's the basic encryption for block cipher, you should always use CBC encryption for data greater than 16 bytes.
 
 ## Requirements
 
@@ -51,11 +54,9 @@ pip install RC6Encryption
 
 ### Recommended options
 
-Some encoding errors are possible using the command line, i recommend to use base64/base16/base85.
-
 ```bash
-rc6 [key] -6 -o [secrets.cipher] -i [secrets.file]            # encryption
-rc6 [key] -n base64 -i [secrets.cipher] -o [decipher.file] -d # decryption
+rc6 [key] -m CBC -6 -o [secrets.cipher] -i [secrets.file]            # encryption
+rc6 [key] -m CBC -n base64 -i [secrets.cipher] -o [decipher.file] -d # decryption
 ```
 
 ### Command line
@@ -83,13 +84,11 @@ rc6 rc6key -s secrets                               # encrypt "secrets" with rc6
 ##### Advanced
 
 ```bash
-rc6 rc6key -r 12 -l 5 -w 32 -s secrets              # encrypt "secrets" with rc6key sha256 as key (rounds=12, wbit=32, lgw=5)
-echo secrets| rc6 rc6key --no-sha256 -i             # encrypt "secrets\n" with b'rc6key\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' as key
-rc6 rc6key -i secrets.txt                           # encrypt secrets.txt file with rc6key sha256 as key
-rc6 rc6key -o encrypt.rc6 -s secrets                # encrypt "secrets" with rc6key sha256 as key and redirect the output to the encrypt.rc6 file
-rc6 rc6key -i encrypt.rc6 -d                        # decrypt encrypt.rc6 with rc6key sha256 as key
-
-# I do not recommend using encoding (input or output) with a large file size
+rc6 rc6key -r 12 -l 5 -w 32 -s secrets              # encrypt "secrets" with rc6key sha256 as key (rounds=12, wbit=32, lgw=5) in ECB mode
+echo secrets| rc6 rc6key --no-sha256 -i             # encrypt "secrets\n" with key and PKCS 5/7 padding in ECB mode
+rc6 rc6key -m CBC -I IVTEST -i secrets.txt          # encrypt secrets.txt file content with rc6key sha256 as key and CBC mode and IVTEST as IV
+rc6 rc6key -o encrypt.rc6 -s secrets -m CBC         # encrypt "secrets" with rc6key sha256 as key, IVTEST as IV and redirect the output to the encrypt.rc6 file using CBC encryption mode and random IV
+rc6 rc6key -i encrypt.rc6 -d -m CBC                 # decrypt encrypt.rc6 with rc6key sha256 as key using CBC encryption mode
 
 ## INPUT  ENCODING
 
@@ -105,6 +104,31 @@ rc6 rc6key -s secrets -u                            # encrypt "secrets" with rc6
 ```
 
 ### Python script
+
+#### RC6 encryption using CBC (recommended)
+
+```python
+from RC6Encryption import RC6Encryption
+
+rc6 = RC6Encryption(b'abcdefghijklm')
+iv, encrypt = rc6.data_encryption_CBC(b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm')             # Random IV
+plaintext = rc6.data_decryption_CBC(encrypt, iv)
+
+iv, encrypt = rc6.data_encryption_CBC(b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm', b'IVTEST')  # Generate your IV, be careful, an IV with size less than 16 bytes is not recommended
+plaintext = rc6.data_decryption_CBC(encrypt, iv)
+```
+
+#### RC6 encryption using ECB (not recommended)
+
+```python
+from RC6Encryption import RC6Encryption
+
+rc6 = RC6Encryption(b'abcdefghijklm')
+iv, encrypt = rc6.data_encryption_EBC(b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm')
+plaintext = rc6.data_decryption_CBC(encrypt, iv)
+```
+
+#### Low level API
 
 ```python
 from RC6Encryption import RC6Encryption
@@ -125,20 +149,20 @@ decipher = rc6.blocks_to_data(rc6.decrypt(cipher))
 ## Help
 
 ```text
-usage: RC6Encryption.py [-h] [--decryption] (--input-file [INPUT_FILE] | --input-string INPUT_STRING)
-                        [--output-file OUTPUT_FILE]
-                        [--base85 | --base64 | --base32 | --base16 | --uu | --output-encoding {base64,base16,uu,base85,base32}]
-                        [--input-encoding {base64,base16,uu,base85,base32}] [--rounds ROUNDS] [--w-bit W_BIT]
-                        [--lgw LGW] [--sha256 | --no-sha256]
+usage: RC6Encryption.py [-h] [--mode {CBC,ECB}] [--decryption] (--input-file [INPUT_FILE] | --input-string INPUT_STRING) [--output-file OUTPUT_FILE]
+                        [--base85 | --base64 | --base32 | --base16 | --output-encoding {base32,base16,base64,base85}]
+                        [--input-encoding {base32,base16,base64,base85}] [--rounds ROUNDS] [--w-bit W_BIT] [--iv IV] [--lgw LGW] [--sha256 | --no-sha256]
                         key
 
-This file performs RC6 encryption.
+This script performs RC6 encryption.
 
 positional arguments:
   key                   Encryption key.
 
 options:
   -h, --help            show this help message and exit
+  --mode {CBC,ECB}, -m {CBC,ECB}
+                        Ecryption mode, for CBC encryption IV is write on the first 16 bytes of the encrypted data.
   --decryption, -d      Data decryption.
   --input-file [INPUT_FILE], --i-file [INPUT_FILE], -i [INPUT_FILE]
                         The file to be encrypted.
@@ -150,18 +174,18 @@ options:
   --base64, --64, -6    Base64 encoding as output format
   --base32, --32, -3    Base32 encoding as output format
   --base16, --16, -1    Base16 encoding as output format
-  --uu, -u              UU encoding as output format
-  --output-encoding {base64,base16,uu,base85,base32}, --o-encoding {base64,base16,uu,base85,base32}, -e {base64,base16,uu,base85,base32}
+  --output-encoding {base32,base16,base64,base85}, --o-encoding {base32,base16,base64,base85}, -e {base32,base16,base64,base85}
                         Output encoding.
-  --input-encoding {base64,base16,uu,base85,base32}, --i-encoding {base64,base16,uu,base85,base32}, -n {base64,base16,uu,base85,base32}
+  --input-encoding {base32,base16,base64,base85}, --i-encoding {base32,base16,base64,base85}, -n {base32,base16,base64,base85}
                         Input encoding.
   --rounds ROUNDS, -r ROUNDS
                         RC6 rounds
   --w-bit W_BIT, -b W_BIT
                         RC6 w-bit
+  --iv IV, -I IV        IV for CBC mode only, for decryption if IV is not set the 16 first bytes are used instead.
   --lgw LGW, -l LGW     RC6 lgw
   --sha256, --no-sha256
-                        Use the sha256 of the key as the key. (default: True)
+                        Use the sha256 hash of the key as the key.
 ```
 
 ## Licence
