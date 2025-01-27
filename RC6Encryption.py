@@ -146,7 +146,7 @@ Algorithm:
     B = B - S[0]
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Maurice Lambert"
 __author_email__ = "mauricelambert434@gmail.com"
 __maintainer__ = "Maurice Lambert"
@@ -156,7 +156,7 @@ license = "GPL-3.0 License"
 __url__ = "https://github.com/mauricelambert/RC6Encryption"
 
 copyright = """
-RC6Encryption  Copyright (C) 2021, 2023, 2024  Maurice Lambert
+RC6Encryption  Copyright (C) 2021, 2023, 2024, 2025  Maurice Lambert
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
 under certain conditions.

@@ -2,6 +2,7 @@ LICENSE.txt
 MANIFEST.in
 RC6Encryption.py
 README.md
+pyproject.toml
 setup.cfg
 setup.py
 RC6Encryption.egg-info/PKG-INFO

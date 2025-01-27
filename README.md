@@ -18,8 +18,36 @@ This package require:
 
 ## Installation
 
+### Pip
+
 ```bash
-pip install RC6Encryption
+python3 -m pip install RC6Encryption
+```
+
+### Git
+
+```bash
+git clone "https://github.com/mauricelambert/RC6Encryption.git"
+cd "RC6Encryption"
+python3 -m pip install .
+```
+
+### Wget
+
+```bash
+wget https://github.com/mauricelambert/RC6Encryption/archive/refs/heads/main.zip
+unzip main.zip
+cd RC6Encryption-main
+python3 -m pip install .
+```
+
+### cURL
+
+```bash
+curl -O https://github.com/mauricelambert/RC6Encryption/archive/refs/heads/main.zip
+unzip main.zip
+cd RC6Encryption-main
+python3 -m pip install .
 ```
 
 ## Usages
@@ -96,8 +124,8 @@ plaintext = rc6.data_decryption_CBC(encrypt, iv)
 from RC6Encryption import RC6Encryption
 
 rc6 = RC6Encryption(b'abcdefghijklm')
-iv, encrypt = rc6.data_encryption_EBC(b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm')
-plaintext = rc6.data_decryption_CBC(encrypt, iv)
+encrypt = rc6.data_encryption_ECB(b'abcdefghijklmnopabcdefghijklmnopabcdefghijklm')
+plaintext = rc6.data_decryption_ECB(encrypt)
 ```
 
 #### Low level API
@@ -113,10 +141,11 @@ decipher = rc6.blocks_to_data(rc6.decrypt(cipher))
 
 ## Links
 
- - [Github Page](https://github.com/mauricelambert/RC6Encryption/)
+ - [Pypi](https://pypi.org/project/RC6Encryption/)
+ - [Github](https://github.com/mauricelambert/RC6Encryption/)
  - [Documentation](https://mauricelambert.github.io/info/python/security/RC6Encryption.html)
- - [Pypi package](https://pypi.org/project/RC6Encryption/)
  - [Executable](https://mauricelambert.github.io/info/python/security/RC6Encryption.pyz)
+ - [Python Windows executable](https://mauricelambert.github.io/info/python/security/RC6Encryption.exe)
 
 ## Help
 

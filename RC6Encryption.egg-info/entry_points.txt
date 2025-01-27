@@ -1,2 +1,2 @@
 [console_scripts]
-rc6 = RC6Encryption:main
+RC6Encryption = RC6Encryption:main
